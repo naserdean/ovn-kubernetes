@@ -365,6 +365,8 @@ func ConfigureOVS(ctx context.Context, namespace, podName, hostIfaceName string,
 
 	klog.Infof("ConfigureOVS: namespace: %s, podName: %s, network: %s, NAD %s, SandboxID: %q, UID: %q, MAC: %s, IPs: %v",
 		namespace, podName, ifInfo.NetName, ifInfo.NADName, sandboxID, initialPodUID, ifInfo.MAC, ipStrs)
+	klog.Infof("ConfigureOVS: namespace: %s, podName: %s, network: %s, NAD %s, SandboxID: %q, UID: %q, MAC: %s, IPs: %v, ovn_kube_mode: %s",
+		namespace, podName, ifInfo.NetName, ifInfo.NADName, sandboxID, initialPodUID, ifInfo.MAC, ipStrs, ifInfo.OvnKubeMode)
 
 	// Find and remove any existing OVS port with this iface-id. Pods can
 	// have multiple sandboxes if some are waiting for garbage collection,
@@ -386,6 +388,12 @@ func ConfigureOVS(ctx context.Context, namespace, podName, hostIfaceName string,
 		fmt.Sprintf("external_ids:iface-id-ver=%s", initialPodUID),
 		fmt.Sprintf("external_ids:ip_addresses=%s", strings.Join(ipStrs, ",")),
 		fmt.Sprintf("external_ids:sandbox=%s", sandboxID),
+	}
+
+	if ifInfo.OvnKubeMode != "" {
+		// Since ovn-kube can run in full mode and dpu mode, we need to mark the type in order to know
+		// which owns what resource
+		ovsArgs = append(ovsArgs, fmt.Sprintf("external_ids:ovn_kube_mode=%s", ifInfo.OvnKubeMode))
 	}
 
 	if len(ifInfo.VfNetdevName) != 0 {

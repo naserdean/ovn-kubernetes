@@ -405,3 +405,19 @@ func ExternalIDsForObject(obj K8sObject) map[string]string {
 		types.OvnK8sPrefix + "/kind":  gk.String(),
 	}
 }
+
+func GetPhysNetNameKey() string {
+	if config.Gateway.PhysNetNameKey != "" {
+		return config.Gateway.PhysNetNameKey
+	}
+	return types.PhysicalNetworkName
+}
+
+var conntrackzone int
+
+func GetConntrackZone() int {
+	if conntrackzone == 0 {
+		conntrackzone = config.Default.ConntrackZone
+	}
+	return conntrackzone
+}

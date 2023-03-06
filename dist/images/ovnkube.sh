@@ -81,6 +81,7 @@ fi
 # OVNKUBE_NODE_MGMT_PORT_NETDEV - ovnkube node management port netdev.
 # OVN_ENCAP_IP - encap IP to be used for OVN traffic on the node. mandatory in case ovnkube-node-mode=="dpu"
 # OVN_HOST_NETWORK_NAMESPACE - namespace to classify host network traffic for applying network policies
+# OVN_CONNTRACK_ZONE - Conntrack zone number used for openflow rules (default 64000)
 
 # The argument to the command is the operation to be performed
 # ovn-master ovn-controller ovn-node display display_env ovn_debug
@@ -237,6 +238,8 @@ ovnkube_node_mgmt_port_netdev=${OVNKUBE_NODE_MGMT_PORT_NETDEV:-}
 ovnkube_config_duration_enable=${OVNKUBE_CONFIG_DURATION_ENABLE:-false}
 # OVN_ENCAP_IP - encap IP to be used for OVN traffic on the node
 ovn_encap_ip=${OVN_ENCAP_IP:-}
+# OVN_CONNTRACK_ZONE - conntrack zone number used for openflow rules (default 64000)
+ovn_conntrack_zone=${OVN_CONNTRACK_ZONE:-}
 
 ovn_ex_gw_network_interface=${OVN_EX_GW_NETWORK_INTERFACE:-}
 
@@ -535,6 +538,7 @@ display_env() {
   echo OVN_DAEMONSET_VERSION ${ovn_daemonset_version}
   echo OVNKUBE_NODE_MODE ${ovnkube_node_mode}
   echo OVN_ENCAP_IP ${ovn_encap_ip}
+  echo OVN_CONNTRACK_ZONE ${ovn_conntrack_zone}
   echo ovnkube.sh version ${ovnkube_version}
   echo OVN_HOST_NETWORK_NAMESPACE ${ovn_host_network_namespace}
 }
@@ -1074,9 +1078,14 @@ ovn-controller() {
 
 # ovn-node - all nodes
 ovn-node() {
-  trap 'kill $(jobs -p) ; rm -f /etc/cni/net.d/10-ovn-kubernetes.conf ; exit 0' TERM
+  trap 'kill $(jobs -p) ; exit 0' TERM
   check_ovn_daemonset_version "3"
   rm -f ${OVN_RUNDIR}/ovnkube.pid
+  if [[ ${ovnkube_node_mode} != "dpu" ]]; then
+    echo "removing OVN CNI conf"
+    rm -vf /etc/cni/net.d/10-ovn-kubernetes.conf
+  fi
+
 
   if [[ ${ovnkube_node_mode} != "dpu-host" ]]; then
     echo "=============== ovn-node - (wait for ovs)"
@@ -1210,6 +1219,11 @@ ovn-node() {
     fi
   fi
 
+  ovn_conntrack_zone_flag=
+  if [[ ${ovn_conntrack_zone} != "" ]]; then
+     ovn_conntrack_zone_flag="--conntrack-zone=${ovn_conntrack_zone}"
+  fi
+
   ovnkube_node_mode_flag=
   if [[ ${ovnkube_node_mode} != "" ]]; then
     ovnkube_node_mode_flag="--ovnkube-node-mode=${ovnkube_node_mode}"
@@ -1304,7 +1318,7 @@ ovn-node() {
      ${ovnkube_node_mgmt_port_netdev_flag} &
 
   wait_for_event attempts=3 process_ready ovnkube
-  if [[ ${ovnkube_node_mode} != "dpu" ]]; then
+  if [[ ${ovnkube_node_mode} != "dpu" ]] && [[ $(lscpu | grep Architecture | awk '{print$2}') != 'aarch64' ]]; then
     setup_cni
   fi
   echo "=============== ovn-node ========== running"

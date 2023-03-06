@@ -363,6 +363,12 @@ type GatewayConfig struct {
 	EgressGWInterface string `gcfg:"egw-interface"`
 	// NextHop is the gateway IP address of Interface; will be autodetected if not given
 	NextHop string `gcfg:"next-hop"`
+	// PhysNetNameKey is the key name used to map to an OVS bridge that provides
+	// access to physical/external network. Default is  "physnet".
+	PhysNetNameKey string `gcfg:"physnetname-key"`
+	// UplinkPort is the port used as the uplink on the gateway interface bridge.
+	// Used in scenarios when it cannot be auto detected.
+	UplinkPort string `gcfg:"uplink-port"`
 	// VLANID is the option VLAN tag to apply to gateway traffic for "shared" mode
 	VLANID uint `gcfg:"vlan-id"`
 	// NodeportEnable sets whether to provide Kubernetes NodePort service or not
@@ -428,6 +434,7 @@ type HybridOverlayConfig struct {
 type OvnKubeNodeConfig struct {
 	Mode                 string `gcfg:"mode"`
 	MgmtPortNetdev       string `gcfg:"mgmt-port-netdev"`
+	MgmtPortIntfName     string `gcfg:"mgmt-port-netdev-intf-name"`
 	MgmtPortRepresentor  string
 	DisableOVNIfaceIdVer bool `gcfg:"disable-ovn-iface-id-ver"`
 }
@@ -1137,6 +1144,18 @@ var OVNGatewayFlags = []cli.Flag{
 			"configured in the node is used. Only useful with " +
 			"\"init-gateways\"",
 		Destination: &cliConfig.Gateway.NextHop,
+	},
+	&cli.StringFlag{
+		Name: "gateway-physnetname-key",
+		Usage: "The key name used to map to an OVS bridge that provides " +
+			"access to physical/external network. Default is  `physnet`",
+		Destination: &cliConfig.Gateway.PhysNetNameKey,
+	},
+	&cli.StringFlag{
+		Name: "gateway-uplink-port",
+		Usage: "The port to be used as the uplink on the gateway interface bridge." +
+			"Used in scenarios when it cannot be auto detected.",
+		Destination: &cliConfig.Gateway.UplinkPort,
 	},
 	&cli.UintFlag{
 		Name: "gateway-vlanid",

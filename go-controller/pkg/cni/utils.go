@@ -135,6 +135,7 @@ func PodAnnotation2PodInfo(podAnnotation map[string]string, podNADAnnotation *ut
 		NetName:              netName,
 		NADName:              nadName,
 		EnableUDPAggregation: config.Default.EnableUDPAggregation,
+		OvnKubeMode:          config.OvnKubeNode.Mode,
 	}
 	return podInterfaceInfo, nil
 }

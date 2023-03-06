@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	utilnet "k8s.io/utils/net"
 
 	libovsdbclient "github.com/ovn-org/libovsdb/client"
+	"github.com/ovn-org/libovsdb/ovsdb"
 	"github.com/pkg/errors"
 
 	"github.com/ovn-org/ovn-kubernetes/go-controller/pkg/config"
@@ -242,7 +244,7 @@ func (oc *DefaultNetworkController) gatewayInit(nodeName string, clusterIPSubnet
 		nodeName,
 		gatewayRouter,
 		l3GatewayConfig.MACAddress.String(),
-		types.PhysicalNetworkName,
+		util.GetPhysNetNameKey(),
 		l3GatewayConfig.IPAddresses,
 		l3GatewayConfig.VLANID); err != nil {
 		return err
@@ -492,6 +494,30 @@ func (oc *DefaultNetworkController) addExternalSwitch(prefix, interfaceID, nodeN
 	// This is a learning switch port with "unknown" address. The external
 	// world is accessed via this port.
 	externalSwitch := externalSwitchName(prefix, nodeName)
+
+	// Prepare predicate to find all the localnet ports which already exist on the switch but
+	// have different physnet mappings or VLANs
+	p := func(item *nbdb.LogicalSwitchPort) bool {
+		res := reflect.DeepEqual(map[string]string{"network_name": physNetworkName}, item.Options)
+		if vlanID != nil {
+			intVlanID := int(*vlanID)
+			return item.Type == "localnet" && *item.TagRequest == intVlanID && !res
+		}
+		return item.Type == "localnet" && !res
+	}
+	sw := nbdb.LogicalSwitch{Name: externalSwitch}
+	sw.UUID, _ = oc.lsManager.GetUUID(externalSwitch)
+
+	var ops []ovsdb.Operation
+	ops, err = libovsdbops.DeleteLogicalSwitchPortsWithPredicateOps(oc.nbClient, ops, &sw, p)
+	if err != nil {
+		return fmt.Errorf("could not generate ops to delete stale localnetports from logical switch %s (%+v)", externalSwitch, err)
+	}
+	_, err = libovsdbops.TransactAndCheck(oc.nbClient, ops)
+	if err != nil {
+		return fmt.Errorf("could not remove stale localnetports (%+v)", err)
+	}
+
 	externalLogicalSwitchPort := nbdb.LogicalSwitchPort{
 		Addresses: []string{"unknown"},
 		Type:      "localnet",
@@ -515,7 +541,7 @@ func (oc *DefaultNetworkController) addExternalSwitch(prefix, interfaceID, nodeN
 		},
 		Addresses: []string{macAddress},
 	}
-	sw := nbdb.LogicalSwitch{Name: externalSwitch}
+	sw = nbdb.LogicalSwitch{Name: externalSwitch}
 
 	err = libovsdbops.CreateOrUpdateLogicalSwitchPortsAndSwitch(oc.nbClient, &sw, &externalLogicalSwitchPort, &externalLogicalSwitchPortToRouter)
 	if err != nil {

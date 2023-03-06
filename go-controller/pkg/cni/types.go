@@ -49,6 +49,7 @@ type PodInterfaceInfo struct {
 	PodUID               string `json:"pod-uid"`
 	VfNetdevName         string `json:"vf-netdev-name"`
 	EnableUDPAggregation bool   `json:"enable-udp-aggregation"`
+	OvnKubeMode          string `json:"ovnKubeMode"`
 
 	// network name, for default network, it is "default", otherwise it is net-attach-def's netconf spec name
 	NetName string `json:"netName"`

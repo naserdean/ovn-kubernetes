@@ -272,8 +272,12 @@ func checkForStaleOVSInternalPorts() {
 // network controller independently in a later commit.
 func checkForStaleOVSRepresentorInterfaces(nodeName string, wf factory.ObjectCacheInterface) {
 	// Get all ovn-kuberntes Pod interfaces. these are OVS interfaces that have their external_ids:sandbox set.
-	out, stderr, err := util.RunOVSVsctl("--columns=name,external_ids", "--data=bare", "--no-headings",
-		"--format=csv", "find", "Interface", "external_ids:sandbox!=\"\"", "external_ids:vf-netdev-name!=\"\"")
+	ovsArgs := []string{"--columns=name,external_ids", "--data=bare", "--no-headings",
+		"--format=csv", "find", "Interface", "external_ids:sandbox!=\"\"", "external_ids:vf-netdev-name!=\"\""}
+	// check only for resources created by the current type of ovn-kube
+	ovsArgs = append(ovsArgs, fmt.Sprintf("external_ids:ovn_kube_mode=%s", config.OvnKubeNode.Mode))
+
+	out, stderr, err := util.RunOVSVsctl(ovsArgs...)
 	if err != nil {
 		klog.Errorf("Failed to list ovn-k8s OVS interfaces:, stderr: %q, error: %v", stderr, err)
 		return

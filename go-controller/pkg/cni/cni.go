@@ -256,7 +256,8 @@ func HandleCNIRequest(request *PodRequest, podLister corev1listers.PodLister, us
 	var result, resultForLogging []byte
 	var response *Response
 	var err, err1 error
-
+	klog.Infof("%s %s starting CNI request (%+v) DeviceID(%q) for pod %s %s and ovnkubemode %s", request, request.Command, request,
+		request.CNIConf.DeviceID, request.PodNamespace, request.PodName, config.OvnKubeNode.Mode)
 	klog.Infof("%s %s starting CNI request %+v", request, request.Command, request)
 	switch request.Command {
 	case CNIAdd:

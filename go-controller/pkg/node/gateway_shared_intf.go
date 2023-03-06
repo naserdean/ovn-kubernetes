@@ -51,11 +51,14 @@ const (
 	ovnKubeNodeSNATMark = "0x3f0"
 )
 
-var (
-	HostMasqCTZone     = config.Default.ConntrackZone + 1 //64001
-	OVNMasqCTZone      = HostMasqCTZone + 1               //64002
-	HostNodePortCTZone = config.Default.ConntrackZone + 3 //64003
-)
+var HostMasqCTZone, OVNMasqCTZone, HostNodePortCTZone, HostXDPCTZone int
+
+func initCTZones() {
+	HostMasqCTZone = util.GetConntrackZone() + 1
+	OVNMasqCTZone = HostMasqCTZone + 1
+	HostNodePortCTZone = util.GetConntrackZone() + 3
+	HostXDPCTZone = util.GetConntrackZone() + 4
+}
 
 // nodePortWatcherIptables manages iptables rules for shared gateway
 // to ensure that services using NodePorts are accessible.
@@ -685,6 +688,7 @@ func (npw *nodePortWatcher) DeleteService(service *kapi.Service) error {
 func (npw *nodePortWatcher) SyncServices(services []interface{}) error {
 	var err error
 	var errors []error
+	initCTZones()
 	keepIPTRules := []iptRule{}
 	for _, serviceInterface := range services {
 		name := ktypes.NamespacedName{Namespace: serviceInterface.(*kapi.Service).Namespace, Name: serviceInterface.(*kapi.Service).Name}
@@ -1095,6 +1099,7 @@ func (ofm *openflowManager) updateBridgeFlowCache(extraIPs []net.IP) error {
 }
 
 func flowsForDefaultBridge(bridge *bridgeConfiguration, extraIPs []net.IP) ([]string, error) {
+	initCTZones()
 	ofPortPhys := bridge.ofPortPhys
 	bridgeMacAddress := bridge.macAddress.String()
 	ofPortPatch := bridge.ofPortPatch
@@ -1763,7 +1768,7 @@ func cleanupSharedGateway() error {
 	bridgeMappings := strings.Split(stdout, ",")
 	for _, bridgeMapping := range bridgeMappings {
 		m := strings.Split(bridgeMapping, ":")
-		if network := m[0]; network == types.PhysicalNetworkName {
+		if network := m[0]; network == util.GetPhysNetNameKey() {
 			bridgeName = m[1]
 			break
 		}
