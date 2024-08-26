@@ -108,6 +108,8 @@ spec:
           value: {{ default 5 .Values.logFileMaxBackups | quote }}
         - name: OVNKUBE_LOGFILE_MAXAGE
           value:  {{ default 5 .Values.logFileMaxAge | quote }}
+#        - name: OVN_ENABLE_INTERCONNECT
+#          value: {{ hasKey .Values.global "enableInterconnect" | ternary .Values.global.enableInterconnect false | quote }}
         - name: OVN_NET_CIDR
           valueFrom:
             configMapKeyRef:

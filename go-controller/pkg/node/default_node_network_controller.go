@@ -598,6 +598,13 @@ func createNodeManagementPorts(node *kapi.Node, nodeLister listers.NodeLister, n
 		if err != nil {
 			return nil, nil, err
 		}
+		mgmtPortMac, err := util.GenerateRandMAC()
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = util.UpdateNodeManagementPortMACAddressesWithRetry(node, nodeLister, kubeInterface, mgmtPortMac, types.DefaultNetworkName); err != nil {
+			return nil, nil, err
+		}
 	}
 	ports := NewManagementPorts(node.Name, subnets, netdevName, rep)
 
@@ -849,6 +856,13 @@ func (nc *DefaultNodeNetworkController) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to set node zone annotation for node %s: %w", nc.name, err)
 	}
 
+	if config.OvnKubeNode.Mode != types.NodeModeDPUHost {
+		klog.Infof("Setting EncapIp %s in node annotation", config.Default.EncapIP)
+		if err = util.SetNodeEncapIp(nodeAnnotator, config.Default.EncapIP); err != nil {
+			return err
+		}
+	}
+
 	if err := nodeAnnotator.Run(); err != nil {
 		return fmt.Errorf("failed to set node %s annotations: %w", nc.name, err)
 	}
@@ -1089,11 +1103,11 @@ func (nc *DefaultNodeNetworkController) Start(ctx context.Context) error {
 		if err := cniServer.Start(cni.ServerRunDir); err != nil {
 			return err
 		}
+	}
 
-		// Write CNI config file if it doesn't already exist
-		if err := config.WriteCNIConfig(); err != nil {
-			return err
-		}
+	// Write CNI config file if it doesn't already exist
+	if err := config.WriteCNIConfig(); err != nil {
+		return err
 	}
 
 	if config.OVNKubernetesFeature.EnableEgressService {
