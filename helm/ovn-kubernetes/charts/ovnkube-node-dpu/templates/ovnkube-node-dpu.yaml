@@ -37,8 +37,8 @@ spec:
       {{- if eq (hasKey .Values.global "unprivilegedMode" | ternary .Values.global.unprivilegedMode false) false }}
       hostPID: true
       {{- end }}
-      containers:
       automountServiceAccountToken: false
+      containers:
       # nb-ovsdb - v3
       - name: nb-ovsdb
         image: {{ include "getDPUImage" . }}
