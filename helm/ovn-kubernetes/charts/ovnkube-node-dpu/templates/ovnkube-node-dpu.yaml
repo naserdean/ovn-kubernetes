@@ -38,6 +38,7 @@ spec:
       hostPID: true
       {{- end }}
       containers:
+      automountServiceAccountToken: false
       # nb-ovsdb - v3
       - name: nb-ovsdb
         image: {{ include "getDPUImage" . }}

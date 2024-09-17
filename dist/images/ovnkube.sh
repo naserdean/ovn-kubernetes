@@ -177,6 +177,9 @@ ovnkube_loglevel=${OVNKUBE_LOGLEVEL:-4}
 # two gateway modes that we support using `images/daemonset.sh` tool
 ovn_gateway_mode=${OVN_GATEWAY_MODE:-"shared"}
 ovn_gateway_opts=${OVN_GATEWAY_OPTS:-""}
+if [ -f /ovn_gateway_opts ]; then
+  ovn_gateway_opts="${ovn_gateway_opts} $(cat /ovn_gateway_opts)"
+fi
 ovn_gateway_router_subnet=${OVN_GATEWAY_ROUTER_SUBNET:-""}
 
 net_cidr=${OVN_NET_CIDR:-10.128.0.0/14/23}
@@ -312,6 +315,13 @@ ovn_enable_svc_template_support=${OVN_ENABLE_SVC_TEMPLATE_SUPPORT:-true}
 ovn_enable_dnsnameresolver=${OVN_ENABLE_DNSNAMERESOLVER:-false}
 # OVN_NOHOSTSUBNET_LABEL - node label indicating nodes managing their own network
 ovn_nohostsubnet_label=${OVN_NOHOSTSUBNET_LABEL:-""}
+
+# TODO check if needed
+if [[ ${K8S_NODE} == "" ]]; then
+  echo "Couldn't get the required Host K8s Nodename. Exiting..."
+else
+  K8S_NODE=$(ovs-vsctl --if-exists get Open_vSwitch . external_ids:host-k8s-nodename | tr -d '\"')
+fi
 
 # Determine the ovn rundir.
 if [[ -f /usr/bin/ovn-appctl ]]; then
@@ -1982,6 +1992,14 @@ ovnkube-controller-with-node() {
 	  ovn_enable_dnsnameresolver_flag="--enable-dns-name-resolver"
   fi
   echo "ovn_enable_dnsnameresolver_flag=${ovn_enable_dnsnameresolver_flag}"
+
+  if [[ ${ovnkube_node_mode} == "dpu" ]]; then
+    K8S_NODE=$(ovs-vsctl --if-exists get Open_vSwitch . external_ids:host-k8s-nodename | tr -d '\"')
+    if [[ ${K8S_NODE} == "" ]]; then
+      echo "Couldn't get the required Host K8s Nodename. Exiting..."
+      exit 1
+    fi
+  fi
 
   echo "=============== ovnkube-controller-with-node --init-ovnkube-controller-with-node=========="
   /usr/bin/ovnkube --init-ovnkube-controller ${K8S_NODE} --init-node ${K8S_NODE} \
