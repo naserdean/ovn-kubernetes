@@ -278,6 +278,9 @@ spec:
         - mountPath: /etc/ovn/
           name: host-var-lib-ovs
           readOnly: true
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: tenant-cluster-access-secret
+          readOnly: true
         resources:
           requests:
             cpu: 100m
@@ -581,5 +584,14 @@ spec:
       - name: host-etc-ovs
         hostPath:
           path: /etc/openvswitch
+      - name: tenant-cluster-access-secret
+        secret:
+          defaultMode: 420
+          items:
+          - key: ca.crt
+            path: ca.crt
+          - key: token
+            path: token
+          secretName: source-cluster-credentials
       tolerations:
       - operator: "Exists"
