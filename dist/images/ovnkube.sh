@@ -177,10 +177,13 @@ ovnkube_loglevel=${OVNKUBE_LOGLEVEL:-4}
 # two gateway modes that we support using `images/daemonset.sh` tool
 ovn_gateway_mode=${OVN_GATEWAY_MODE:-"shared"}
 ovn_gateway_opts=${OVN_GATEWAY_OPTS:-""}
-if [ -f /ovn_gateway_opts ]; then
-  ovn_gateway_opts="${ovn_gateway_opts} $(cat /ovn_gateway_opts)"
+if [ -f /etc/init-output/ovn_gateway_opts ]; then
+  ovn_gateway_opts="${ovn_gateway_opts} $(cat /etc/init-output/ovn_gateway_opts)"
 fi
 ovn_gateway_router_subnet=${OVN_GATEWAY_ROUTER_SUBNET:-""}
+if [ -f /etc/init-output/ovn_gateway_router_subnet ]; then
+  ovn_gateway_router_subnet="$(cat /etc/init-output/ovn_gateway_router_subnet)"
+fi
 
 net_cidr=${OVN_NET_CIDR:-10.128.0.0/14/23}
 svc_cidr=${OVN_SVC_CIDR:-172.30.0.0/16}

@@ -36,7 +36,7 @@ global:
   # -- The gateway mode (shared or local), if not given, gateway functionality is disabled
   gatewayMode: shared
   # -- Optional extra gateway options
-  gatewayOpts: "--gateway-interface=br-ovn --gateway-uplink-port=puplinkbrovn"
+  gatewayOpts: "--gateway-interface=br-ovn --gateway-uplink-port=puplinkbrovn --gateway-nexthop=10.0.121.3 "
   # -- This allows ovnkube-node to run without SYS_ADMIN capability, by performing interface setup in the CNI plugin
   unprivilegedMode: false
   # -- The v4 join subnet used for assigning join switch IPv4 addresses
@@ -118,7 +118,7 @@ global:
   # -- The largest number of messages per second that gets logged before drop
   # @default 20
   aclLoggingRateLimit: 20
-  ovnGatewayRouter: "10.0.110.0/24"
+  ovnGatewayRouter: "10.0.121.0/29"
   # -- If set, then load balancers do not get deleted when all backends are removed
   emptyLbEvents: ""
   # -- Port of north bound ovsdb
