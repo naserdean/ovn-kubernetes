@@ -8,7 +8,7 @@ tags:
   ovnkube-db-raft: false
   ovnkube-master: false
   ovnkube-node: false
-  ovs-node: true
+  ovs-node: false
   ovnkube-node-dpu: false
   ovnkube-node-dpu-host: true
   ovnkube-zone-controller: false

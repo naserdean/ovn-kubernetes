@@ -25,6 +25,20 @@ spec:
         component: network
         type: infra
         kubernetes.io/os: "linux"
+      annotations:
+        dpf.nvidia.com/ip-requests: |-
+          [
+            {
+              "name": "vtep",
+              "poolName": "{{ .Values.ipamPool }}",
+              "poolType": "{{ .Values.ipamPoolType}}"
+            },
+            {
+              "name": "pf",
+              "poolName": "{{ .Values.ipamPool }}",
+              "poolType": "{{ .Values.ipamPoolType}}"
+            }
+          ]
     spec:
       {{- if .Values.global.imagePullSecretName }}
       imagePullSecrets:
@@ -38,6 +52,100 @@ spec:
       hostPID: true
       {{- end }}
       automountServiceAccountToken: false
+      # DPU CNI provisioner
+      initContainers:
+      - name: allocator
+        image: {{ include "getDPUImage" . }}
+        imagePullPolicy: {{ default "IfNotPresent" .Values.global.image.pullPolicy }}
+        command:
+        - ./ipallocator
+        - allocator
+        # Needs to always run so that later it can receive a signal to do a CMD DEL
+        restartPolicy: Always
+        securityContext:
+          # Needs to run as root to ensure that it can access the NVIPAM socket
+          runAsUser: 0
+        # Readiness probe is not really nessecary but it helps ensure that the file is written before the real app container
+        # starts.
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /var/run/readyz
+        # We use preStop to deallocate the IP when the pod is deleted. Quoting the official docs:
+        # PreStop is called immediately before a container is terminated due to an
+        # API request or management event such as liveness/startup probe failure,
+        # preemption, resource contention, etc. The handler is not called if the
+        # container crashes or exits.
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - ./ipallocator
+              - deallocator
+        env:
+        - name: IP_ALLOCATOR_REQUESTS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['dpf.nvidia.com/ip-requests']
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: K8S_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        volumeMounts:
+        - mountPath: /opt/cni/bin
+          name: cni-bin-dir
+          readOnly: true
+        - mountPath: /var/lib/cni/nv-ipam
+          name: nvipam-daemon-socket-dir
+          readOnly: true
+        - mountPath: /tmp/ips
+          name: ips
+        # Used for caching the result
+        - mountPath: /var/lib/cni
+          name: cache
+      - name: cniprovisioner
+        image: {{ include "getDPUImage" . }}
+        command: ["./cniprovisioner"]
+        imagePullPolicy: {{ default "IfNotPresent" .Values.global.image.pullPolicy }}
+        # Needs to always run because of DHCP server
+        restartPolicy: Always
+        # Ensures that DHCP server is up and running. This is for serving IP to the PF on the host.
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /var/run/readyz
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: VTEP_CIDR
+          value: {{ default "" .Values.vtepCIDR | quote }}
+        - name: HOST_CIDR
+          value: {{ default "" .Values.hostCIDR | quote }}
+        volumeMounts:
+        - mountPath: /tmp/ips
+          name: ips
+        - mountPath: /etc/init-output
+          name: init-output
+        - name: incluster
+          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+          readOnly: true
+        - mountPath: /var/run/openvswitch/
+          name: host-var-run-ovs
       containers:
       # nb-ovsdb - v3
       - name: nb-ovsdb
@@ -536,6 +644,21 @@ spec:
         kubernetes.io/os: "linux"
         k8s.ovn.org/dpu: ""
       volumes:
+      # CNI provisioner
+      - name: ips
+        emptyDir: {}
+      - name: init-output
+        emptyDir: {}
+      - name: cni-bin-dir
+        hostPath:
+          path: /opt/cni/bin
+          type: Directory
+      - name: cache
+        emptyDir: {}
+      - name: nvipam-daemon-socket-dir
+        hostPath:
+          path: /var/lib/cni/nv-ipam
+          type: Directory
       # Common volumes
       - name: host-var-run-dbus
         hostPath:
@@ -588,10 +711,20 @@ spec:
         secret:
           defaultMode: 420
           items:
-          - key: ca.crt
+          - key: KUBERNETES_CA_DATA
             path: ca.crt
-          - key: token
+          - key: TOKEN_FILE
             path: token
-          secretName: source-cluster-credentials
+          secretName: {{ default "" .Values.kubernetesSecretName }}
+      - name: incluster
+        projected:
+          sources:
+          - secret:
+              name: ovnkube-dpucniprovisioner 
+              items:
+              - key: ca.crt
+                path: ca.crt
+              - key: token
+                path: token
       tolerations:
       - operator: "Exists"
