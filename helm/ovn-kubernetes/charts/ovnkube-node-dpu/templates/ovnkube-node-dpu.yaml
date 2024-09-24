@@ -346,6 +346,8 @@ spec:
           {{- end }}
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /etc/init-output
+          name: init-output
         # Common mounts
         # for the iptables wrapper
         - mountPath: /host
