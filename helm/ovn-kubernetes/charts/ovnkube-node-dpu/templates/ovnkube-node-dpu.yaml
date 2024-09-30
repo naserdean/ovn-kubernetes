@@ -6,7 +6,6 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: ovnkube-node-dpu
-  # namespace set up by install
   namespace: ovn-kubernetes
   annotations:
     kubernetes.io/description: |
@@ -54,11 +53,11 @@ spec:
       automountServiceAccountToken: false
       # DPU CNI provisioner
       initContainers:
-      - name: allocator
+      - name: ipallocator
         image: {{ include "getDPUImage" . }}
         imagePullPolicy: {{ default "IfNotPresent" .Values.global.image.pullPolicy }}
         command:
-        - ./ipallocator
+        - /ipallocator
         - allocator
         # Needs to always run so that later it can receive a signal to do a CMD DEL
         restartPolicy: Always
@@ -81,7 +80,7 @@ spec:
           preStop:
             exec:
               command:
-              - ./ipallocator
+              - /ipallocator
               - deallocator
         env:
         - name: IP_ALLOCATOR_REQUESTS
@@ -114,7 +113,7 @@ spec:
           name: cache
       - name: cniprovisioner
         image: {{ include "getDPUImage" . }}
-        command: ["./cniprovisioner"]
+        command: ["/cniprovisioner"]
         imagePullPolicy: {{ default "IfNotPresent" .Values.global.image.pullPolicy }}
         # Needs to always run because of DHCP server
         restartPolicy: Always
@@ -722,7 +721,7 @@ spec:
         projected:
           sources:
           - secret:
-              name: ovnkube-dpucniprovisioner 
+              name: ovnkube-dpucniprovisioner-token
               items:
               - key: ca.crt
                 path: ca.crt

@@ -35,7 +35,7 @@ global:
   # -- The gateway mode (shared or local), if not given, gateway functionality is disabled
   gatewayMode: shared
   # -- Optional extra gateway options
-  gatewayOpts: ""
+  gatewayOpts: "--gateway-interface=ens1f0np0"
   # -- This allows ovnkube-node to run without SYS_ADMIN capability, by performing interface setup in the CNI plugin
   unprivilegedMode: false
   # -- The v4 join subnet used for assigning join switch IPv4 addresses
