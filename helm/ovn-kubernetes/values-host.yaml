@@ -35,7 +35,7 @@ global:
   # -- The gateway mode (shared or local), if not given, gateway functionality is disabled
   gatewayMode: shared
   # -- Optional extra gateway options
-  gatewayOpts: "--gateway-interface=ens1f0np0"
+  gatewayOpts: ""
   # -- This allows ovnkube-node to run without SYS_ADMIN capability, by performing interface setup in the CNI plugin
   unprivilegedMode: false
   # -- The v4 join subnet used for assigning join switch IPv4 addresses
@@ -153,21 +153,23 @@ global:
   libovsdbClientLogFile: ""
   image:
     # -- Image repository for ovn-kubernetes components
-    repository: harbor.mellanox.com/cloud-orchestration-dev/aserdean/ovn-daemonset-ubuntu-amd64
+    repository: harbor.mellanox.com/cloud-orchestration-dev/dpf/aserdean/ovn-kubernetes
     # -- Specify image tag to run
-    tag: alin-dev-upstream
+    tag: v0.0.0-hbn-ovn-6
     # -- Image pull policy
     pullPolicy: Always
   dpuImage:
     # -- Image repository for ovn-kubernetes components
-    repository: harbor.mellanox.com/cloud-orchestration-dev/aserdean/ovn-daemonset-ubuntu-arm64
+    repository: harbor.mellanox.com/cloud-orchestration-dev/dpf/aserdean/ovn-kubernetes
     # -- Specify image tag to run
-    tag: alin-dev-upstream
+    tag: v0.0.0-hbn-ovn-6
     # -- Image pull policy
     pullPolicy: Always
 
+# User must specify both of them
 ovnkube-node-dpu-host:
-    nodeMgmtPortNetdev: "ens1f0v0"
+  nodeMgmtPortNetdev: "ens1f0v0"
+  gatewayOpts: "--gateway-interface=ens1f0np0"
 
 ovnkube-identity:
     # -- number of ovnube-identity pods, co-located with kube-apiserver process, so need to be the same number of control plane nodes
