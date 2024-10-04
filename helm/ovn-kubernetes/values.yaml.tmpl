@@ -153,18 +153,18 @@ global:
   libovsdbClientLogFile: ""
   image:
     # -- Image repository for ovn-kubernetes components
-    repository: harbor.mellanox.com/cloud-orchestration-dev/dpf/aserdean/ovn-kubernetes
+    repository: ${OVNKUBERNETES_IMAGE}
     # -- Specify image tag to run
-    tag: v0.0.0-hbn-ovn-6
+    tag: ${TAG}
     # -- Image pull policy
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   dpuImage:
     # -- Image repository for ovn-kubernetes components
-    repository: harbor.mellanox.com/cloud-orchestration-dev/dpf/aserdean/ovn-kubernetes
+    repository: ${OVNKUBERNETES_IMAGE}
     # -- Specify image tag to run
-    tag: v0.0.0-hbn-ovn-6
+    tag: ${TAG}
     # -- Image pull policy
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
 # User must specify both of them
 ovnkube-node-dpu-host:
