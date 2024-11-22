@@ -62,3 +62,5 @@ dependencies:
     version: 1.0.0
     tags:
       - ovn-kubernetes-resource-injector
+    condition:
+      ovn-kubernetes-resource-injector.enabled
