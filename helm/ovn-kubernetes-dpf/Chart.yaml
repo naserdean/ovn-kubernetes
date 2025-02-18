@@ -1,0 +1,15 @@
+apiVersion: v2
+name: ovn-kubernetes-chart
+description: Helm chart to deploy ovn-kubernetes in the NVIDIA DOCA Platform Framework (DPF) context
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://ovn-kubernetes.io/
+icon: https://www.ovn.org/images/ovn-logo.png
+sources:
+- https://github.com/ovn-org/ovn-kubernetes
+- https://github.com/ovn-org/ovn
+dependencies:
+- name: ovn-kubernetes-resource-injector
+  version: 1.0.0
+  condition: ovn-kubernetes-resource-injector.enabled
