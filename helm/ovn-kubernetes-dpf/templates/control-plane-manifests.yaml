@@ -158,9 +158,9 @@ spec:
         kubernetes.io/os: "linux"
         ovn.dpu.nvidia.com/skip-injection: ""
     spec:
-      {{- if .Values.imagePullSecretName }}
+      {{- if .Values.global.imagePullSecretName }}
       imagePullSecrets:
-      - name: {{ .Values.imagePullSecretName }}
+      - name: {{ .Values.global.imagePullSecretName }}
       {{- end }}
       priorityClassName: "system-cluster-critical"
       serviceAccountName: {{ include "ovn-kubernetes.fullname" . }}-cluster-manager

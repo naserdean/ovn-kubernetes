@@ -164,9 +164,9 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
               {{- toYaml . | nindent 12 }}
       {{- end }}
-      {{- if .Values.imagePullSecretName }}
+      {{- if .Values.global.imagePullSecretName }}
       imagePullSecrets:
-      - name: {{ .Values.imagePullSecretName }}
+      - name: {{ .Values.global.imagePullSecretName }}
       {{- end }}
       priorityClassName: "system-cluster-critical"
       serviceAccountName: {{ include "ovn-kubernetes.fullname" . }}-node

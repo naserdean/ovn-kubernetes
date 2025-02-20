@@ -64,11 +64,12 @@ podNetwork: 10.244.0.0/16/24
 serviceNetwork: 10.96.0.0/12
 # -- Options related to setting up the gateway. Applies to all relevant manifests.
 gatewayOpts: ""
-# -- The name of the secret used to pull images. Applies to all relevant manifests.
-# TODO: Check if it should be like that or list
-imagePullSecretName: ""
 # -- MTU of network interface in a Kubernetes pod
 mtu: 1400
+
+global:
+  # -- The name of the secret used to pull images. Applies to all relevant manifests.
+  imagePullSecretName: ""
 
 # DPF Contract. These values are effective only for manifests related to hosts that
 # have a DPU and the DPU manifests themselves.
